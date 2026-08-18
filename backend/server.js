@@ -15,7 +15,7 @@ connectDB();
 
 // ── Middleware ──
 app.use(cors({
-    origin: "http://localhost:5173",       // Frontend dev server
+    origin: "https://grow-orcin-ten.vercel.app",       // Frontend dev server
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,                     // Allow cookies / Authorization headers
 }));
