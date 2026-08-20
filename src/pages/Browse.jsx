@@ -1,6 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import NoteCard from '../components/NoteCard';
+import SearchBar from '../components/SearchBar';
+import CategoryFilters from '../components/CategoryFilters';
+import EmptyState from '../components/EmptyState';
+import NotePreviewModal from '../components/NotePreviewModal';
 import { dummyNotes, SUBJECTS } from '../data/dummyData';
+import { filterNotes } from '../utils/notesUtils';
+import { getNotes } from '../services/noteService';
 import './Browse.css';
 
 const PRICE_RANGES = [
@@ -19,42 +26,107 @@ const SORT_OPTIONS = [
     { label: 'Price: High to Low', value: 'price-desc' },
 ];
 
+const initialsFromName = (name = '') =>
+    name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() || '')
+        .join('') || '?';
+
+/** Map API note shape → NoteCard / Browse shape */
+const mapApiNote = (note) => {
+    const author = note.author || note.uploader?.name || 'Unknown';
+    return {
+        id: note.id || note._id,
+        title: note.title,
+        subject: note.subject,
+        category: note.category || note.subject,
+        author,
+        authorAvatar: initialsFromName(author),
+        price: note.price ?? 0,
+        rating: note.rating ?? 0,
+        reviews: note.reviews ?? 0,
+        pages: note.pages || 0,
+        downloads: note.downloads ?? 0,
+        preview: note.description || note.preview || '',
+        tags: Array.isArray(note.tags) ? note.tags : [],
+        isBestseller: false,
+        isFree: note.isFree || note.price === 0,
+        uploadDate: note.uploadDate || note.createdAt,
+        fileType: note.fileType || 'PDF',
+        fileUrl: note.fileUrl,
+        originalFilename: note.originalFilename,
+        isReal: true,
+    };
+};
+
 const BrowsePage = () => {
-    const [search, setSearch] = useState('');
+    const [searchParams] = useSearchParams();
+    const [search, setSearch] = useState(searchParams.get('search') || '');
+    const [category, setCategory] = useState(searchParams.get('category') || 'All');
     const [subject, setSubject] = useState('All');
     const [priceRange, setPriceRange] = useState('any');
     const [minRating, setMinRating] = useState(0);
     const [sortBy, setSortBy] = useState('downloads');
     const [showFilters, setShowFilters] = useState(false);
+    const [previewNote, setPreviewNote] = useState(null);
+    const [apiNotes, setApiNotes] = useState([]);
+    const [notesLoading, setNotesLoading] = useState(true);
+    const [notesError, setNotesError] = useState('');
+
+    useEffect(() => {
+        const q = searchParams.get('search');
+        const c = searchParams.get('category');
+        if (q) setSearch(q);
+        if (c) setCategory(c);
+    }, [searchParams]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadNotes = async () => {
+            setNotesLoading(true);
+            setNotesError('');
+            try {
+                const { data } = await getNotes();
+                if (cancelled) return;
+                if (data?.success && Array.isArray(data.notes)) {
+                    setApiNotes(data.notes.map(mapApiNote));
+                } else {
+                    setApiNotes([]);
+                }
+            } catch {
+                if (!cancelled) {
+                    setNotesError('Could not load uploaded notes. Showing sample notes.');
+                    setApiNotes([]);
+                }
+            } finally {
+                if (!cancelled) setNotesLoading(false);
+            }
+        };
+
+        loadNotes();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const allNotes = useMemo(() => {
+        // Real uploads first; keep demo notes so the UI stays populated
+        return [...apiNotes, ...dummyNotes];
+    }, [apiNotes]);
 
     const filtered = useMemo(() => {
-        let result = [...dummyNotes];
+        let result = filterNotes(allNotes, { search, category, subject });
 
-        // Search
-        if (search.trim()) {
-            const q = search.toLowerCase();
-            result = result.filter(
-                (n) =>
-                    n.title.toLowerCase().includes(q) ||
-                    n.subject.toLowerCase().includes(q) ||
-                    n.author.toLowerCase().includes(q) ||
-                    n.tags.some((t) => t.toLowerCase().includes(q))
-            );
-        }
-
-        // Subject
-        if (subject !== 'All') result = result.filter((n) => n.subject === subject);
-
-        // Price
         if (priceRange === 'free') result = result.filter((n) => n.price === 0);
         else if (priceRange === 'under50') result = result.filter((n) => n.price > 0 && n.price < 50);
         else if (priceRange === '50-100') result = result.filter((n) => n.price >= 50 && n.price <= 100);
         else if (priceRange === 'above100') result = result.filter((n) => n.price > 100);
 
-        // Rating
         if (minRating > 0) result = result.filter((n) => n.rating >= minRating);
 
-        // Sort
         if (sortBy === 'rating') result.sort((a, b) => b.rating - a.rating);
         else if (sortBy === 'newest') result.sort((a, b) => new Date(b.uploadDate) - new Date(a.uploadDate));
         else if (sortBy === 'price-asc') result.sort((a, b) => a.price - b.price);
@@ -62,70 +134,47 @@ const BrowsePage = () => {
         else result.sort((a, b) => b.downloads - a.downloads);
 
         return result;
-    }, [search, subject, priceRange, minRating, sortBy]);
+    }, [allNotes, search, category, subject, priceRange, minRating, sortBy]);
 
     const clearFilters = () => {
         setSearch('');
+        setCategory('All');
         setSubject('All');
         setPriceRange('any');
         setMinRating(0);
         setSortBy('downloads');
     };
 
-    const hasActiveFilters = subject !== 'All' || priceRange !== 'any' || minRating > 0 || search.trim();
+    const hasActiveFilters = category !== 'All' || subject !== 'All' || priceRange !== 'any' || minRating > 0 || search.trim();
 
     return (
         <div className="page-wrapper">
-            {/* Page Header */}
             <div className="browse-hero">
                 <div className="orb orb-purple browse-orb" />
                 <div className="container browse-hero-inner">
                     <h1 className="heading-lg browse-title">Browse Student Notes</h1>
-                    <p className="browse-subtitle">Find the perfect notes for your subject from our community of student creators</p>
+                    <p className="browse-subtitle">Find the perfect notes — filter by category, subject, or search</p>
 
-                    {/* Search Bar */}
-                    <div className="browse-search-wrap">
-                        <div className="browse-search-icon">🔍</div>
-                        <input
-                            id="browse-search"
-                            type="text"
-                            placeholder="Search by subject, topic, or author…"
-                            className="form-input browse-search-input"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                        />
-                        {search && (
-                            <button className="search-clear" onClick={() => setSearch('')}>✕</button>
-                        )}
-                    </div>
+                    <SearchBar
+                        id="browse-search"
+                        value={search}
+                        onChange={setSearch}
+                        placeholder="Search by title, author, tags…"
+                    />
 
-                    {/* Subject Quick Filters */}
-                    <div className="subject-quick-filters">
-                        {['All', ...SUBJECTS].slice(0, 8).map((s) => (
-                            <button
-                                key={s}
-                                id={`subject-filter-${s}`}
-                                className={`subject-chip ${subject === s ? 'active' : ''}`}
-                                onClick={() => setSubject(s)}
-                            >
-                                {s}
-                            </button>
-                        ))}
-                    </div>
+                    <CategoryFilters active={category} onChange={setCategory} />
                 </div>
             </div>
 
             <div className="container browse-layout">
-                {/* Sidebar Filters */}
                 <aside className={`filter-sidebar ${showFilters ? 'open' : ''}`}>
                     <div className="filter-sidebar-header">
                         <h3 className="filter-title">Filters</h3>
                         {hasActiveFilters && (
-                            <button className="clear-filters-btn" onClick={clearFilters}>Clear All</button>
+                            <button type="button" className="clear-filters-btn" onClick={clearFilters}>Clear All</button>
                         )}
                     </div>
 
-                    {/* Subject Filter */}
                     <div className="filter-group">
                         <h4 className="filter-group-title">Subject</h4>
                         <div className="filter-list">
@@ -134,10 +183,8 @@ const BrowsePage = () => {
                                     <input
                                         type="radio"
                                         name="subject"
-                                        value={s}
                                         checked={subject === s}
                                         onChange={() => setSubject(s)}
-                                        id={`radio-subject-${s}`}
                                     />
                                     <span className="radio-custom" />
                                     <span className="radio-label">{s}</span>
@@ -146,7 +193,6 @@ const BrowsePage = () => {
                         </div>
                     </div>
 
-                    {/* Price Range */}
                     <div className="filter-group">
                         <h4 className="filter-group-title">Price Range</h4>
                         <div className="filter-list">
@@ -155,10 +201,8 @@ const BrowsePage = () => {
                                     <input
                                         type="radio"
                                         name="price"
-                                        value={p.value}
                                         checked={priceRange === p.value}
                                         onChange={() => setPriceRange(p.value)}
-                                        id={`radio-price-${p.value}`}
                                     />
                                     <span className="radio-custom" />
                                     <span className="radio-label">{p.label}</span>
@@ -167,14 +211,13 @@ const BrowsePage = () => {
                         </div>
                     </div>
 
-                    {/* Minimum Rating */}
                     <div className="filter-group">
                         <h4 className="filter-group-title">Min. Rating</h4>
                         <div className="rating-filter">
                             {[0, 3, 3.5, 4, 4.5].map((r) => (
                                 <button
                                     key={r}
-                                    id={`rating-filter-${r}`}
+                                    type="button"
                                     className={`rating-chip ${minRating === r ? 'active' : ''}`}
                                     onClick={() => setMinRating(r)}
                                 >
@@ -185,17 +228,25 @@ const BrowsePage = () => {
                     </div>
                 </aside>
 
-                {/* Results */}
                 <div className="browse-results">
-                    {/* Results Bar */}
                     <div className="results-bar">
                         <div className="results-count">
-                            <strong>{filtered.length}</strong> notes found
-                            {search && <span> for "<em>{search}</em>"</span>}
+                            {notesLoading ? (
+                                <span>Loading notes…</span>
+                            ) : (
+                                <>
+                                    <strong>{filtered.length}</strong> notes found
+                                    {search && <span> for "<em>{search}</em>"</span>}
+                                    {apiNotes.length > 0 && (
+                                        <span style={{ marginLeft: 8, opacity: 0.75 }}>
+                                            ({apiNotes.length} uploaded)
+                                        </span>
+                                    )}
+                                </>
+                            )}
                         </div>
                         <div className="results-controls">
                             <select
-                                id="sort-select"
                                 className="form-select sort-select"
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
@@ -205,55 +256,40 @@ const BrowsePage = () => {
                                 ))}
                             </select>
                             <button
+                                type="button"
                                 className="mobile-filter-toggle btn btn-ghost btn-sm hide-desktop"
                                 onClick={() => setShowFilters(!showFilters)}
                             >
-                                🎛️ Filters {hasActiveFilters && <span className="filter-dot" />}
+                                🎛️ Filters
                             </button>
                         </div>
                     </div>
 
-                    {/* Active Filters Tags */}
-                    {hasActiveFilters && (
-                        <div className="active-filters">
-                            {subject !== 'All' && (
-                                <span className="active-filter-tag">
-                                    📖 {subject}
-                                    <button onClick={() => setSubject('All')}>✕</button>
-                                </span>
-                            )}
-                            {priceRange !== 'any' && (
-                                <span className="active-filter-tag">
-                                    💰 {PRICE_RANGES.find((p) => p.value === priceRange)?.label}
-                                    <button onClick={() => setPriceRange('any')}>✕</button>
-                                </span>
-                            )}
-                            {minRating > 0 && (
-                                <span className="active-filter-tag">
-                                    ⭐ {minRating}+
-                                    <button onClick={() => setMinRating(0)}>✕</button>
-                                </span>
-                            )}
-                        </div>
+                    {notesError && (
+                        <p className="field-error" style={{ marginBottom: 12 }} role="status">
+                            ⚠ {notesError}
+                        </p>
                     )}
 
-                    {/* Notes Grid */}
                     {filtered.length > 0 ? (
                         <div className="browse-notes-grid">
                             {filtered.map((note) => (
-                                <NoteCard key={note.id} note={note} />
+                                <NoteCard key={note.id} note={note} onPreview={setPreviewNote} />
                             ))}
                         </div>
                     ) : (
-                        <div className="no-results">
-                            <div className="no-results-icon">📭</div>
-                            <h3 className="no-results-title">No notes found</h3>
-                            <p className="no-results-sub">Try different search terms or clear your filters.</p>
-                            <button className="btn btn-primary" onClick={clearFilters}>Clear Filters</button>
-                        </div>
+                        <EmptyState
+                            icon="📭"
+                            title="No notes found"
+                            message="Try different search terms or clear your filters."
+                            actionLabel="Clear Filters"
+                            onAction={clearFilters}
+                        />
                     )}
                 </div>
             </div>
+
+            <NotePreviewModal note={previewNote} onClose={() => setPreviewNote(null)} />
         </div>
     );
 };

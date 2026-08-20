@@ -1,8 +1,20 @@
 import { useState } from 'react';
 import { SUBJECTS } from '../data/dummyData';
+import { uploadNote } from '../services/noteService';
+import { useToast } from '../context/ToastContext';
 import './Upload.css';
 
+const MAX_PDF_BYTES = 10 * 1024 * 1024; // 10MB
+
+const isPdfFile = (file) => {
+    if (!file) return false;
+    const mimeOk = file.type === 'application/pdf' || file.type === '';
+    const nameOk = file.name?.toLowerCase().endsWith('.pdf');
+    return mimeOk && nameOk;
+};
+
 const Upload = () => {
+    const { toast } = useToast();
     const [form, setForm] = useState({
         title: '',
         subject: '',
@@ -19,6 +31,7 @@ const Upload = () => {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [errors, setErrors] = useState({});
+    const [submitError, setSubmitError] = useState('');
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -28,19 +41,34 @@ const Upload = () => {
             ...(name === 'isFree' && checked ? { price: '' } : {}),
         }));
         setErrors((er) => ({ ...er, [name]: '' }));
+        setSubmitError('');
+    };
+
+    const setPdfFile = (file) => {
+        if (!file) return;
+        if (!isPdfFile(file)) {
+            setErrors((er) => ({ ...er, previewFile: 'Only PDF files are allowed.' }));
+            setForm((f) => ({ ...f, previewFile: null }));
+            return;
+        }
+        if (file.size > MAX_PDF_BYTES) {
+            setErrors((er) => ({ ...er, previewFile: 'PDF must be 10MB or smaller.' }));
+            setForm((f) => ({ ...f, previewFile: null }));
+            return;
+        }
+        setForm((f) => ({ ...f, previewFile: file }));
+        setErrors((er) => ({ ...er, previewFile: '' }));
+        setSubmitError('');
     };
 
     const handleDrop = (e) => {
         e.preventDefault();
         setDragOver(false);
-        const file = e.dataTransfer.files[0];
-        if (file && file.type === 'application/pdf') {
-            setForm((f) => ({ ...f, previewFile: file }));
-        }
+        setPdfFile(e.dataTransfer.files[0]);
     };
 
     const handleFileChange = (e) => {
-        setForm((f) => ({ ...f, previewFile: e.target.files[0] }));
+        setPdfFile(e.target.files[0]);
     };
 
     const validateStep1 = () => {
@@ -57,7 +85,9 @@ const Upload = () => {
         if (!form.isFree && (!form.price || isNaN(form.price) || Number(form.price) <= 0)) {
             errs.price = 'Enter a valid price or mark as free.';
         }
-        if (!form.previewFile) errs.previewFile = 'Please upload your notes file.';
+        if (!form.previewFile) errs.previewFile = 'Please upload your notes PDF.';
+        else if (!isPdfFile(form.previewFile)) errs.previewFile = 'Only PDF files are allowed.';
+        else if (form.previewFile.size > MAX_PDF_BYTES) errs.previewFile = 'PDF must be 10MB or smaller.';
         setErrors(errs);
         return Object.keys(errs).length === 0;
     };
@@ -66,14 +96,48 @@ const Upload = () => {
         if (step === 1 && validateStep1()) setStep(2);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateStep2()) return;
+
         setLoading(true);
-        setTimeout(() => {
+        setSubmitError('');
+
+        const formData = new FormData();
+        formData.append('title', form.title.trim());
+        formData.append('subject', form.subject);
+        formData.append('category', form.subject);
+        formData.append('description', form.description.trim());
+        formData.append('isFree', String(form.isFree));
+        formData.append('price', form.isFree ? '0' : String(form.price));
+        formData.append('tags', form.tags.trim());
+        if (form.pages) formData.append('pages', String(form.pages));
+        formData.append('file', form.previewFile);
+
+        try {
+            const { data } = await uploadNote(formData);
+            if (data?.success) {
+                toast.success(data.message || 'Note uploaded successfully');
+                setSuccess(true);
+            } else {
+                const msg = data?.message || 'Upload failed. Please try again.';
+                setSubmitError(msg);
+                toast.error(msg);
+            }
+        } catch (err) {
+            const status = err.response?.status;
+            const msg =
+                err.response?.data?.message ||
+                (status === 413
+                    ? 'File too large. Maximum PDF size is 10MB.'
+                    : status === 401
+                      ? 'Please log in again to upload.'
+                      : 'Upload failed. Please try again.');
+            setSubmitError(msg);
+            toast.error(msg);
+        } finally {
             setLoading(false);
-            setSuccess(true);
-        }, 2000);
+        }
     };
 
     if (success) {
@@ -84,15 +148,15 @@ const Upload = () => {
                     <div className="upload-success-icon">🎉</div>
                     <h2 className="heading-md">Notes Uploaded Successfully!</h2>
                     <p className="upload-success-sub">
-                        Your notes "<strong>{form.title}</strong>" have been submitted for review.
-                        They'll be live within 24 hours.
+                        Your notes "<strong>{form.title}</strong>" were uploaded successfully
+                        and should appear in Browse.
                     </p>
                     <div className="upload-success-actions">
-                        <button className="btn btn-primary btn-lg" onClick={() => { setSuccess(false); setStep(1); setForm({ title: '', subject: '', description: '', price: '', isFree: false, tags: '', pages: '', previewFile: null, coverFile: null }); }}>
+                        <button className="btn btn-primary btn-lg" onClick={() => { setSuccess(false); setStep(1); setSubmitError(''); setForm({ title: '', subject: '', description: '', price: '', isFree: false, tags: '', pages: '', previewFile: null, coverFile: null }); }}>
                             Upload More Notes
                         </button>
-                        <button className="btn btn-ghost btn-lg" onClick={() => window.location.href = '/dashboard'}>
-                            View Dashboard
+                        <button className="btn btn-ghost btn-lg" onClick={() => window.location.href = '/browse'}>
+                            Browse Notes
                         </button>
                     </div>
                 </div>
@@ -264,7 +328,7 @@ const Upload = () => {
                                                         <strong>Drag & drop your PDF here</strong>
                                                         <span>or click to browse files</span>
                                                     </div>
-                                                    <div className="dropzone-hint">Supported: PDF (max 50MB)</div>
+                                                    <div className="dropzone-hint">Supported: PDF (max 10MB)</div>
                                                 </>
                                             )}
                                             <input
@@ -339,9 +403,15 @@ const Upload = () => {
                                     </div>
                                 </div>
 
+                                {submitError && (
+                                    <div className="field-error" style={{ marginTop: 16 }} role="alert">
+                                        ⚠ {submitError}
+                                    </div>
+                                )}
+
                                 {/* Submit */}
                                 <div className="upload-actions">
-                                    <button type="button" className="btn btn-ghost btn-lg" onClick={() => setStep(1)}>
+                                    <button type="button" className="btn btn-ghost btn-lg" onClick={() => setStep(1)} disabled={loading}>
                                         ← Back
                                     </button>
                                     <button
@@ -351,7 +421,7 @@ const Upload = () => {
                                         disabled={loading}
                                     >
                                         {loading ? (
-                                            <><span className="spinner" /> Publishing…</>
+                                            <><span className="spinner" /> Uploading…</>
                                         ) : (
                                             '🚀 Publish Notes'
                                         )}

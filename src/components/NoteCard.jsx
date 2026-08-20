@@ -1,49 +1,68 @@
-import { Link } from 'react-router-dom';
+import { useBookmarks } from '../context/BookmarkContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import './NoteCard.css';
 
-const StarRating = ({ rating }) => {
-    return (
-        <div className="stars">
-            {[1, 2, 3, 4, 5].map((star) => (
-                <span key={star} className={star <= Math.round(rating) ? 'star-filled' : 'star-empty'}>
-                    ★
-                </span>
-            ))}
-        </div>
-    );
-};
+const StarRating = ({ rating }) => (
+    <div className="stars">
+        {[1, 2, 3, 4, 5].map((star) => (
+            <span key={star} className={star <= Math.round(rating) ? 'star-filled' : 'star-empty'}>★</span>
+        ))}
+    </div>
+);
 
-const NoteCard = ({ note }) => {
+const NoteCard = ({ note, onPreview, featured = false }) => {
+    const { toast } = useToast();
+    const { isBookmarked, toggleBookmark } = useBookmarks();
+    const saved = isBookmarked(note.id);
+
     const {
-        id, title, subject, author, authorAvatar, price, rating,
-        reviews, pages, downloads, preview, isBestseller, isFree, tags, fileType,
+        title, subject, author, authorAvatar, price, rating,
+        reviews, pages, downloads, preview, isBestseller, isFree, tags, fileType, category,
     } = note;
 
+    const handleBookmark = (e) => {
+        e.stopPropagation();
+        toggleBookmark(note.id);
+        toast.success(saved ? 'Removed from bookmarks' : 'Saved to bookmarks');
+    };
+
+    const handleCardClick = () => onPreview?.(note);
+
     return (
-        <div className="note-card card">
-            {/* Card Header */}
+        <article
+            className={`note-card card ${featured ? 'note-card-featured' : ''}`}
+            onClick={handleCardClick}
+            onKeyDown={(e) => e.key === 'Enter' && handleCardClick()}
+            role="button"
+            tabIndex={0}
+        >
             <div className="note-card-header">
                 <div className="note-subject-badge badge badge-primary">{subject}</div>
                 <div className="note-badges">
+                    {category && <span className="badge badge-category">{category}</span>}
                     {isBestseller && <span className="badge badge-gold">⭐ Bestseller</span>}
                     {isFree && <span className="badge badge-free">FREE</span>}
+                    <button
+                        type="button"
+                        className={`bookmark-btn ${saved ? 'saved' : ''}`}
+                        onClick={handleBookmark}
+                        aria-label={saved ? 'Remove bookmark' : 'Bookmark note'}
+                    >
+                        {saved ? '🔖' : '🔗'}
+                    </button>
                 </div>
             </div>
 
-            {/* Card Body */}
             <div className="note-card-body">
                 <h3 className="note-title">{title}</h3>
                 <p className="note-preview">{preview}</p>
-
-                {/* Tags */}
                 <div className="note-tags">
-                    {tags.slice(0, 3).map((tag) => (
+                    {(tags || []).slice(0, 3).map((tag) => (
                         <span key={tag} className="note-tag">#{tag}</span>
                     ))}
                 </div>
             </div>
 
-            {/* Meta Info */}
             <div className="note-meta">
                 <div className="note-meta-row">
                     <div className="note-author">
@@ -53,22 +72,12 @@ const NoteCard = ({ note }) => {
                     <span className="note-file-type">{fileType}</span>
                 </div>
                 <div className="note-stats">
-                    <span className="note-stat">
-                        <span className="note-stat-icon">📄</span>
-                        {pages} pages
-                    </span>
-                    <span className="note-stat">
-                        <span className="note-stat-icon">⬇️</span>
-                        {downloads.toLocaleString()}
-                    </span>
-                    <span className="note-stat">
-                        <span className="note-stat-icon">💬</span>
-                        {reviews}
-                    </span>
+                    <span className="note-stat">📄 {pages || 0} pages</span>
+                    <span className="note-stat">⬇️ {(downloads ?? 0).toLocaleString()}</span>
+                    <span className="note-stat">💬 {reviews ?? 0}</span>
                 </div>
             </div>
 
-            {/* Card Footer */}
             <div className="note-card-footer">
                 <div className="note-rating-price">
                     <div className="note-rating">
@@ -76,19 +85,18 @@ const NoteCard = ({ note }) => {
                         <span className="rating-value">{rating}</span>
                     </div>
                     <div className="note-price">
-                        {isFree ? (
-                            <span className="price-free">Free</span>
-                        ) : (
-                            <span className="price-paid">₹{price}</span>
-                        )}
+                        {isFree ? <span className="price-free">Free</span> : <span className="price-paid">₹{price}</span>}
                     </div>
                 </div>
-                <Link to={`/browse`} className="btn btn-primary btn-sm note-cta">
-                    {isFree ? 'Download Free' : 'Get Notes'}
-                    <span>→</span>
-                </Link>
+                <button
+                    type="button"
+                    className="btn btn-primary btn-sm note-cta"
+                    onClick={(e) => { e.stopPropagation(); onPreview?.(note); }}
+                >
+                    Preview →
+                </button>
             </div>
-        </div>
+        </article>
     );
 };
 

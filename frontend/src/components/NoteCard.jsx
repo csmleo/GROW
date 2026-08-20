@@ -57,7 +57,7 @@ const NoteCard = ({ note, onPreview, featured = false }) => {
                 <h3 className="note-title">{title}</h3>
                 <p className="note-preview">{preview}</p>
                 <div className="note-tags">
-                    {tags.slice(0, 3).map((tag) => (
+                    {(tags || []).slice(0, 3).map((tag) => (
                         <span key={tag} className="note-tag">#{tag}</span>
                     ))}
                 </div>
@@ -72,9 +72,9 @@ const NoteCard = ({ note, onPreview, featured = false }) => {
                     <span className="note-file-type">{fileType}</span>
                 </div>
                 <div className="note-stats">
-                    <span className="note-stat">📄 {pages} pages</span>
-                    <span className="note-stat">⬇️ {downloads.toLocaleString()}</span>
-                    <span className="note-stat">💬 {reviews}</span>
+                    <span className="note-stat">📄 {pages || 0} pages</span>
+                    <span className="note-stat">⬇️ {(downloads ?? 0).toLocaleString()}</span>
+                    <span className="note-stat">💬 {reviews ?? 0}</span>
                 </div>
             </div>
 

@@ -7,6 +7,7 @@ import EmptyState from '../components/EmptyState';
 import NotePreviewModal from '../components/NotePreviewModal';
 import { dummyNotes, SUBJECTS } from '../data/dummyData';
 import { filterNotes } from '../utils/notesUtils';
+import { getNotes } from '../services/noteService';
 import './Browse.css';
 
 const PRICE_RANGES = [
@@ -25,6 +26,41 @@ const SORT_OPTIONS = [
     { label: 'Price: High to Low', value: 'price-desc' },
 ];
 
+const initialsFromName = (name = '') =>
+    name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((part) => part[0]?.toUpperCase() || '')
+        .join('') || '?';
+
+/** Map API note shape → NoteCard / Browse shape */
+const mapApiNote = (note) => {
+    const author = note.author || note.uploader?.name || 'Unknown';
+    return {
+        id: note.id || note._id,
+        title: note.title,
+        subject: note.subject,
+        category: note.category || note.subject,
+        author,
+        authorAvatar: initialsFromName(author),
+        price: note.price ?? 0,
+        rating: note.rating ?? 0,
+        reviews: note.reviews ?? 0,
+        pages: note.pages || 0,
+        downloads: note.downloads ?? 0,
+        preview: note.description || note.preview || '',
+        tags: Array.isArray(note.tags) ? note.tags : [],
+        isBestseller: false,
+        isFree: note.isFree || note.price === 0,
+        uploadDate: note.uploadDate || note.createdAt,
+        fileType: note.fileType || 'PDF',
+        fileUrl: note.fileUrl,
+        originalFilename: note.originalFilename,
+        isReal: true,
+    };
+};
+
 const BrowsePage = () => {
     const [searchParams] = useSearchParams();
     const [search, setSearch] = useState(searchParams.get('search') || '');
@@ -35,6 +71,9 @@ const BrowsePage = () => {
     const [sortBy, setSortBy] = useState('downloads');
     const [showFilters, setShowFilters] = useState(false);
     const [previewNote, setPreviewNote] = useState(null);
+    const [apiNotes, setApiNotes] = useState([]);
+    const [notesLoading, setNotesLoading] = useState(true);
+    const [notesError, setNotesError] = useState('');
 
     useEffect(() => {
         const q = searchParams.get('search');
@@ -43,8 +82,43 @@ const BrowsePage = () => {
         if (c) setCategory(c);
     }, [searchParams]);
 
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadNotes = async () => {
+            setNotesLoading(true);
+            setNotesError('');
+            try {
+                const { data } = await getNotes();
+                if (cancelled) return;
+                if (data?.success && Array.isArray(data.notes)) {
+                    setApiNotes(data.notes.map(mapApiNote));
+                } else {
+                    setApiNotes([]);
+                }
+            } catch {
+                if (!cancelled) {
+                    setNotesError('Could not load uploaded notes. Showing sample notes.');
+                    setApiNotes([]);
+                }
+            } finally {
+                if (!cancelled) setNotesLoading(false);
+            }
+        };
+
+        loadNotes();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const allNotes = useMemo(() => {
+        // Real uploads first; keep demo notes so the UI stays populated
+        return [...apiNotes, ...dummyNotes];
+    }, [apiNotes]);
+
     const filtered = useMemo(() => {
-        let result = filterNotes(dummyNotes, { search, category, subject });
+        let result = filterNotes(allNotes, { search, category, subject });
 
         if (priceRange === 'free') result = result.filter((n) => n.price === 0);
         else if (priceRange === 'under50') result = result.filter((n) => n.price > 0 && n.price < 50);
@@ -60,7 +134,7 @@ const BrowsePage = () => {
         else result.sort((a, b) => b.downloads - a.downloads);
 
         return result;
-    }, [search, category, subject, priceRange, minRating, sortBy]);
+    }, [allNotes, search, category, subject, priceRange, minRating, sortBy]);
 
     const clearFilters = () => {
         setSearch('');
@@ -157,8 +231,19 @@ const BrowsePage = () => {
                 <div className="browse-results">
                     <div className="results-bar">
                         <div className="results-count">
-                            <strong>{filtered.length}</strong> notes found
-                            {search && <span> for "<em>{search}</em>"</span>}
+                            {notesLoading ? (
+                                <span>Loading notes…</span>
+                            ) : (
+                                <>
+                                    <strong>{filtered.length}</strong> notes found
+                                    {search && <span> for "<em>{search}</em>"</span>}
+                                    {apiNotes.length > 0 && (
+                                        <span style={{ marginLeft: 8, opacity: 0.75 }}>
+                                            ({apiNotes.length} uploaded)
+                                        </span>
+                                    )}
+                                </>
+                            )}
                         </div>
                         <div className="results-controls">
                             <select
@@ -179,6 +264,12 @@ const BrowsePage = () => {
                             </button>
                         </div>
                     </div>
+
+                    {notesError && (
+                        <p className="field-error" style={{ marginBottom: 12 }} role="status">
+                            ⚠ {notesError}
+                        </p>
+                    )}
 
                     {filtered.length > 0 ? (
                         <div className="browse-notes-grid">
