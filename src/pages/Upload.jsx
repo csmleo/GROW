@@ -20,7 +20,7 @@ const Upload = () => {
         subject: '',
         description: '',
         price: '',
-        isFree: false,
+        isFree: true,
         tags: '',
         pages: '',
         previewFile: null,

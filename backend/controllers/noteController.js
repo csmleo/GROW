@@ -13,7 +13,7 @@ const uploadBufferToCloudinary = (buffer, originalFilename) =>
             {
                 resource_type: "raw",
                 folder: "grow-notes",
-                public_id: `${Date.now()}-${safeName}`,
+                public_id: `${Date.now()}-${safeName}.pdf`,
                 format: "pdf",
             },
             (error, result) => {
@@ -32,6 +32,7 @@ const formatNoteResponse = (note) => {
     const uploader = note.uploader;
     return {
         id: note._id,
+        _id: note._id,
         title: note.title,
         description: note.description,
         subject: note.subject,
@@ -39,18 +40,19 @@ const formatNoteResponse = (note) => {
         fileUrl: note.fileUrl,
         originalFilename: note.originalFilename,
         fileSize: note.fileSize,
-        price: note.price,
-        isFree: note.isFree,
-        tags: note.tags,
-        pages: note.pages,
-        downloads: note.downloads,
-        rating: note.rating,
-        reviews: note.reviews,
+        price: note.price ?? 0,
+        isFree: Boolean(note.isFree || note.price === 0),
+        tags: Array.isArray(note.tags) ? note.tags : [],
+        pages: note.pages || 0,
+        downloads: note.downloads ?? 0,
+        rating: note.rating ?? 0,
+        reviews: note.reviews ?? 0,
         createdAt: note.createdAt,
         uploadDate: note.createdAt,
         uploader: uploader
             ? {
                   id: uploader._id,
+                  _id: uploader._id,
                   name: uploader.name,
                   email: uploader.email,
               }
@@ -165,6 +167,28 @@ exports.getNotes = async (req, res) => {
     }
 };
 
+// GET /api/notes/my (authenticated user's notes)
+exports.getMyNotes = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const notes = await Note.find({ uploader: userId })
+            .populate("uploader", "name email")
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            count: notes.length,
+            notes: notes.map(formatNoteResponse),
+        });
+    } catch (err) {
+        console.error("Get my notes error:", err);
+        return res.status(500).json({
+            success: false,
+            message: err.message || "Failed to fetch your notes.",
+        });
+    }
+};
+
 // GET /api/notes/:id
 exports.getNoteById = async (req, res) => {
     try {
@@ -184,3 +208,4 @@ exports.getNoteById = async (req, res) => {
         });
     }
 };
+

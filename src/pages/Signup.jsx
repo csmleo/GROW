@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { registerUser } from '../services/authService';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import './Auth.css';
 
 const ROLES = [
@@ -14,6 +15,7 @@ const SignupPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { login } = useAuth();
+    const { toast } = useToast();
     const redirectTo = location.state?.from?.pathname || '/dashboard';
     const [form, setForm] = useState({ name: '', email: '', password: '', role: '' });
     const [showPassword, setShowPassword] = useState(false);
@@ -45,9 +47,12 @@ const SignupPage = () => {
                 return;
             }
             login(data);
+            toast.success('Account created! Welcome to GROW.');
             navigate(redirectTo, { replace: true });
         } catch (err) {
-            setError(err.response?.data?.message || 'Registration failed. Please try again.');
+            const msg = err.response?.data?.message || 'Registration failed. Please try again.';
+            setError(msg);
+            toast.error(msg);
         } finally {
             setLoading(false);
         }

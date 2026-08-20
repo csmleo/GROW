@@ -43,11 +43,28 @@ const NotePreviewModal = ({ note, onClose }) => {
 
                 <div className="modal-footer">
                     <span className="modal-price">{note.isFree ? 'Free' : `₹${note.price}`}</span>
-                    <button type="button" className="btn btn-primary" onClick={handlePrimaryAction}>
-                        {canOpenFile
-                            ? (note.isFree ? 'Open PDF' : 'Open Notes')
-                            : (note.isFree ? 'Download Free' : 'Get Notes')} →
-                    </button>
+                    {canOpenFile ? (
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <button type="button" className="btn btn-primary" onClick={handlePrimaryAction}>
+                                📄 Open PDF ↗
+                            </button>
+                            <a
+                                href={note.fileUrl}
+                                download={note.originalFilename || `${note.title || 'note'}.pdf`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-ghost"
+                                style={{ display: 'inline-flex', alignItems: 'center' }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                ⬇ Download
+                            </a>
+                        </div>
+                    ) : (
+                        <button type="button" className="btn btn-primary" onClick={onClose}>
+                            Close
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

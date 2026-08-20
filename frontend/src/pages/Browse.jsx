@@ -5,7 +5,7 @@ import SearchBar from '../components/SearchBar';
 import CategoryFilters from '../components/CategoryFilters';
 import EmptyState from '../components/EmptyState';
 import NotePreviewModal from '../components/NotePreviewModal';
-import { dummyNotes, SUBJECTS } from '../data/dummyData';
+import { SUBJECTS } from '../data/dummyData';
 import { filterNotes } from '../utils/notesUtils';
 import { getNotes } from '../services/noteService';
 import './Browse.css';
@@ -39,6 +39,7 @@ const mapApiNote = (note) => {
     const author = note.author || note.uploader?.name || 'Unknown';
     return {
         id: note.id || note._id,
+        _id: note._id || note.id,
         title: note.title,
         subject: note.subject,
         category: note.category || note.subject,
@@ -52,7 +53,7 @@ const mapApiNote = (note) => {
         preview: note.description || note.preview || '',
         tags: Array.isArray(note.tags) ? note.tags : [],
         isBestseller: false,
-        isFree: note.isFree || note.price === 0,
+        isFree: Boolean(note.isFree || note.price === 0),
         uploadDate: note.uploadDate || note.createdAt,
         fileType: note.fileType || 'PDF',
         fileUrl: note.fileUrl,
@@ -98,7 +99,7 @@ const BrowsePage = () => {
                 }
             } catch {
                 if (!cancelled) {
-                    setNotesError('Could not load uploaded notes. Showing sample notes.');
+                    setNotesError('Could not load notes from server. Please try again.');
                     setApiNotes([]);
                 }
             } finally {
@@ -113,8 +114,7 @@ const BrowsePage = () => {
     }, []);
 
     const allNotes = useMemo(() => {
-        // Real uploads first; keep demo notes so the UI stays populated
-        return [...apiNotes, ...dummyNotes];
+        return apiNotes;
     }, [apiNotes]);
 
     const filtered = useMemo(() => {
@@ -235,13 +235,8 @@ const BrowsePage = () => {
                                 <span>Loading notes…</span>
                             ) : (
                                 <>
-                                    <strong>{filtered.length}</strong> notes found
+                                    <strong>{filtered.length}</strong> {filtered.length === 1 ? 'note' : 'notes'} found
                                     {search && <span> for "<em>{search}</em>"</span>}
-                                    {apiNotes.length > 0 && (
-                                        <span style={{ marginLeft: 8, opacity: 0.75 }}>
-                                            ({apiNotes.length} uploaded)
-                                        </span>
-                                    )}
                                 </>
                             )}
                         </div>

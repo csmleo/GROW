@@ -18,5 +18,9 @@ export const uploadNote = (formData) =>
 /** Fetch all notes for Browse */
 export const getNotes = () => api.get('/notes');
 
+/** Fetch notes uploaded by the current authenticated user */
+export const getMyNotes = () => api.get('/notes/my');
+
 /** Fetch a single note by id */
 export const getNoteById = (id) => api.get(`/notes/${id}`);
+

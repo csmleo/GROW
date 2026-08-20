@@ -1,3 +1,15 @@
+/** Category filters for browse & home */
+export const CATEGORIES = [
+    { id: 'all', label: 'All', icon: '📚' },
+    { id: 'programming', label: 'Programming', icon: '💻' },
+    { id: 'dbms', label: 'DBMS', icon: '🗄️' },
+    { id: 'ai', label: 'AI', icon: '🤖' },
+    { id: 'cyber', label: 'Cybersecurity', icon: '🔐' },
+    { id: 'math', label: 'Mathematics', icon: '📐' },
+    { id: 'science', label: 'Science', icon: '🔬' },
+    { id: 'business', label: 'Business', icon: '💼' },
+];
+
 export const SUBJECTS = [
     'Mathematics',
     'Physics',
@@ -31,11 +43,13 @@ export const dummyNotes = [
         isFree: false,
         uploadDate: '2025-12-10',
         fileType: 'PDF',
+        category: 'Mathematics',
     },
     {
         id: 2,
         title: 'Data Structures & Algorithms – Full Semester Guide',
         subject: 'Computer Science',
+        category: 'Programming',
         author: 'Arjun Mehta',
         authorAvatar: 'AM',
         price: 79,
@@ -67,6 +81,7 @@ export const dummyNotes = [
         isFree: true,
         uploadDate: '2026-01-05',
         fileType: 'PDF',
+        category: 'Business',
     },
     {
         id: 4,
@@ -85,6 +100,7 @@ export const dummyNotes = [
         isFree: false,
         uploadDate: '2025-10-15',
         fileType: 'PDF',
+        category: 'Science',
     },
     {
         id: 5,
@@ -103,6 +119,7 @@ export const dummyNotes = [
         isFree: false,
         uploadDate: '2026-01-25',
         fileType: 'PDF',
+        category: 'Science',
     },
     {
         id: 6,
@@ -121,6 +138,7 @@ export const dummyNotes = [
         isFree: true,
         uploadDate: '2025-09-01',
         fileType: 'PDF',
+        category: 'Programming',
     },
     {
         id: 7,
@@ -139,6 +157,7 @@ export const dummyNotes = [
         isFree: false,
         uploadDate: '2025-12-02',
         fileType: 'PDF',
+        category: 'Mathematics',
     },
     {
         id: 8,
@@ -157,6 +176,7 @@ export const dummyNotes = [
         isFree: false,
         uploadDate: '2026-02-10',
         fileType: 'PDF',
+        category: 'Mathematics',
     },
     {
         id: 9,
@@ -175,6 +195,7 @@ export const dummyNotes = [
         isFree: false,
         uploadDate: '2025-11-10',
         fileType: 'PDF',
+        category: 'Science',
     },
     {
         id: 10,
@@ -193,6 +214,7 @@ export const dummyNotes = [
         isFree: false,
         uploadDate: '2026-01-15',
         fileType: 'PDF',
+        category: 'Business',
     },
     {
         id: 11,
@@ -211,6 +233,7 @@ export const dummyNotes = [
         isFree: false,
         uploadDate: '2025-10-20',
         fileType: 'PDF',
+        category: 'Science',
     },
     {
         id: 12,
@@ -229,8 +252,55 @@ export const dummyNotes = [
         isFree: true,
         uploadDate: '2026-02-01',
         fileType: 'PDF',
+        category: 'AI',
+    },
+    {
+        id: 13,
+        title: 'DBMS – Normalization, SQL & Transactions',
+        subject: 'Computer Science',
+        author: 'Isha Malhotra',
+        authorAvatar: 'IM',
+        price: 55,
+        rating: 4.8,
+        reviews: 198,
+        pages: 92,
+        downloads: 1890,
+        preview: 'Complete DBMS notes: ER diagrams, normalization (1NF–BCNF), SQL queries, joins, indexing, and ACID transactions.',
+        tags: ['DBMS', 'SQL', 'Normalization', 'Transactions'],
+        isBestseller: true,
+        isFree: false,
+        uploadDate: '2026-02-18',
+        fileType: 'PDF',
+        category: 'DBMS',
+    },
+    {
+        id: 14,
+        title: 'Cybersecurity Fundamentals – Networks & Ethical Hacking',
+        subject: 'Computer Science',
+        author: 'Aditya Khanna',
+        authorAvatar: 'AK',
+        price: 69,
+        rating: 4.7,
+        reviews: 156,
+        pages: 110,
+        downloads: 1420,
+        preview: 'Network security, cryptography basics, OWASP top 10, penetration testing intro, and security best practices.',
+        tags: ['Security', 'Networking', 'Ethical Hacking', 'Cryptography'],
+        isBestseller: false,
+        isFree: false,
+        uploadDate: '2026-01-30',
+        fileType: 'PDF',
+        category: 'Cybersecurity',
     },
 ];
+
+/** Platform-wide stats for dashboard & home */
+export const platformStats = {
+    totalNotes: dummyNotes.length,
+    totalDownloads: dummyNotes.reduce((sum, n) => sum + n.downloads, 0),
+    totalUploads: 12480,
+    activeUsers: 50240,
+};
 
 export const dashboardStats = {
     totalEarnings: 12480,

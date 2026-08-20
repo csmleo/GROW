@@ -63,7 +63,6 @@ export const dummyNotes = [
         isFree: false,
         uploadDate: '2025-11-20',
         fileType: 'PDF',
-        category: 'Programming',
     },
     {
         id: 3,

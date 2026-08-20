@@ -17,7 +17,7 @@ const NoteCard = ({ note, onPreview, featured = false }) => {
 
     const {
         title, subject, author, authorAvatar, price, rating,
-        reviews, pages, downloads, preview, isBestseller, isFree, tags, fileType, category,
+        reviews, pages, downloads, preview, isBestseller, isFree, tags, fileType, category, fileUrl,
     } = note;
 
     const handleBookmark = (e) => {
@@ -27,6 +27,15 @@ const NoteCard = ({ note, onPreview, featured = false }) => {
     };
 
     const handleCardClick = () => onPreview?.(note);
+
+    const handleOpenPdf = (e) => {
+        e.stopPropagation();
+        if (fileUrl) {
+            window.open(fileUrl, '_blank', 'noopener,noreferrer');
+        } else {
+            onPreview?.(note);
+        }
+    };
 
     return (
         <article
@@ -69,7 +78,7 @@ const NoteCard = ({ note, onPreview, featured = false }) => {
                         <div className="author-avatar">{authorAvatar}</div>
                         <span className="author-name">{author}</span>
                     </div>
-                    <span className="note-file-type">{fileType}</span>
+                    <span className="note-file-type">{fileType || 'PDF'}</span>
                 </div>
                 <div className="note-stats">
                     <span className="note-stat">📄 {pages || 0} pages</span>
@@ -88,13 +97,39 @@ const NoteCard = ({ note, onPreview, featured = false }) => {
                         {isFree ? <span className="price-free">Free</span> : <span className="price-paid">₹{price}</span>}
                     </div>
                 </div>
-                <button
-                    type="button"
-                    className="btn btn-primary btn-sm note-cta"
-                    onClick={(e) => { e.stopPropagation(); onPreview?.(note); }}
-                >
-                    Preview →
-                </button>
+                {fileUrl ? (
+                    <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                        <button
+                            type="button"
+                            className="btn btn-primary btn-sm note-cta"
+                            style={{ flex: 1 }}
+                            onClick={handleOpenPdf}
+                        >
+                            📄 Open PDF
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            style={{ padding: '0 12px' }}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onPreview?.(note);
+                            }}
+                            title="Preview Details"
+                            aria-label="Preview Details"
+                        >
+                            👁️
+                        </button>
+                    </div>
+                ) : (
+                    <button
+                        type="button"
+                        className="btn btn-primary btn-sm note-cta"
+                        onClick={(e) => { e.stopPropagation(); onPreview?.(note); }}
+                    >
+                        Preview →
+                    </button>
+                )}
             </div>
         </article>
     );

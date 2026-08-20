@@ -13,6 +13,13 @@
 }
 
 /* Header */
+.note-badges {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
 .note-card-header {
     padding: 18px 18px 0;
     display: flex;

@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { loginUser } from '../services/authService';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import './Auth.css';
 
 const LoginPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { login } = useAuth();
+    const { toast } = useToast();
     const redirectTo = location.state?.from?.pathname || '/dashboard';
     const [form, setForm] = useState({ email: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
@@ -30,9 +32,12 @@ const LoginPage = () => {
                 return;
             }
             login(data);
+            toast.success('Welcome back! Logged in successfully.');
             navigate(redirectTo, { replace: true });
         } catch (err) {
-            setError(err.response?.data?.message || 'Login failed. Please try again.');
+            const msg = err.response?.data?.message || 'Login failed. Please try again.';
+            setError(msg);
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
