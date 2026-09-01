@@ -20,6 +20,12 @@ const NoteCard = ({ note, onPreview, featured = false }) => {
         reviews, pages, downloads, preview, isBestseller, isFree, tags, fileType, category, fileUrl,
     } = note;
 
+    const hasDistinctCategory =
+        category &&
+        category.trim().toLowerCase() !== (subject || '').trim().toLowerCase();
+
+    const isFreeNote = Boolean(isFree || price === 0);
+
     const handleBookmark = (e) => {
         e.stopPropagation();
         toggleBookmark(note.id);
@@ -48,9 +54,13 @@ const NoteCard = ({ note, onPreview, featured = false }) => {
             <div className="note-card-header">
                 <div className="note-subject-badge badge badge-primary">{subject}</div>
                 <div className="note-badges">
-                    {category && <span className="badge badge-category">{category}</span>}
+                    {hasDistinctCategory && <span className="badge badge-category">{category}</span>}
                     {isBestseller && <span className="badge badge-gold">⭐ Bestseller</span>}
-                    {isFree && <span className="badge badge-free">FREE</span>}
+                    {isFreeNote ? (
+                        <span className="badge badge-free">FREE</span>
+                    ) : (
+                        <span className="badge badge-gold">₹{price}</span>
+                    )}
                     <button
                         type="button"
                         className={`bookmark-btn ${saved ? 'saved' : ''}`}
@@ -94,7 +104,7 @@ const NoteCard = ({ note, onPreview, featured = false }) => {
                         <span className="rating-value">{rating}</span>
                     </div>
                     <div className="note-price">
-                        {isFree ? <span className="price-free">Free</span> : <span className="price-paid">₹{price}</span>}
+                        {isFreeNote ? <span className="price-free">Free</span> : <span className="price-paid">₹{price}</span>}
                     </div>
                 </div>
                 {fileUrl ? (

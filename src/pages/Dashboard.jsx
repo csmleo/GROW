@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getMyNotes } from '../services/noteService';
-import { myPurchases } from '../data/dummyData';
 import EmptyState from '../components/EmptyState';
 import './Dashboard.css';
 
@@ -11,20 +10,13 @@ const TAB_PURCHASES = 'purchases';
 const TAB_UPLOADS = 'uploads';
 const TAB_EARNINGS = 'earnings';
 
+const myPurchases = [];
+
 const tabs = [
     { id: TAB_OVERVIEW, label: '🏠 Overview' },
     { id: TAB_PURCHASES, label: '🛒 Purchases' },
     { id: TAB_UPLOADS, label: '📤 My Uploads' },
     { id: TAB_EARNINGS, label: '💰 Earnings' },
-];
-
-const monthlyEarnings = [
-    { month: 'Sep', amount: 0 },
-    { month: 'Oct', amount: 0 },
-    { month: 'Nov', amount: 0 },
-    { month: 'Dec', amount: 0 },
-    { month: 'Jan', amount: 0 },
-    { month: 'Feb', amount: 0 },
 ];
 
 const initialsFromName = (name = '') =>
@@ -230,16 +222,25 @@ const DashboardPage = () => {
                                     <button className="link-btn" onClick={() => setActiveTab(TAB_PURCHASES)}>View all →</button>
                                 </div>
                                 <div className="mini-list">
-                                    {myPurchases.slice(0, 3).map((p) => (
-                                        <div key={p.id} className="mini-list-item">
-                                            <div className="mini-item-icon">📖</div>
-                                            <div className="mini-item-info">
-                                                <div className="mini-item-title">{p.title}</div>
-                                                <div className="mini-item-sub">{p.subject} · ₹{p.price}</div>
+                                    {myPurchases.length > 0 ? (
+                                        myPurchases.slice(0, 3).map((p) => (
+                                            <div key={p.id} className="mini-list-item">
+                                                <div className="mini-item-icon">📖</div>
+                                                <div className="mini-item-info">
+                                                    <div className="mini-item-title">{p.title}</div>
+                                                    <div className="mini-item-sub">{p.subject} · ₹{p.price}</div>
+                                                </div>
+                                                <Link to="/browse" className="btn btn-ghost btn-sm">Browse</Link>
                                             </div>
-                                            <Link to="/browse" className="btn btn-ghost btn-sm">Browse</Link>
+                                        ))
+                                    ) : (
+                                        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)' }}>
+                                            <p style={{ fontSize: '0.9rem' }}>No purchases yet.</p>
+                                            <Link to="/browse" className="btn btn-ghost btn-sm" style={{ marginTop: 12 }}>
+                                                Explore Marketplace →
+                                            </Link>
                                         </div>
-                                    ))}
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -282,62 +283,62 @@ const DashboardPage = () => {
                                     </thead>
                                     <tbody>
                                         {myNotes.map((note) => {
-                                            const noteDate = note.uploadDate || note.createdAt;
-                                            const formattedDate = noteDate
-                                                ? new Date(noteDate).toLocaleDateString('en-IN', {
-                                                      day: 'numeric',
-                                                      month: 'short',
-                                                      year: 'numeric',
-                                                  })
-                                                : '—';
+                                             const noteDate = note.uploadDate || note.createdAt;
+                                             const formattedDate = noteDate
+                                                 ? new Date(noteDate).toLocaleDateString('en-IN', {
+                                                       day: 'numeric',
+                                                       month: 'short',
+                                                       year: 'numeric',
+                                                   })
+                                                 : '—';
 
-                                            return (
-                                                <tr key={note.id || note._id}>
-                                                    <td className="upload-row-title">{note.title}</td>
-                                                    <td>
-                                                        <span className="badge badge-primary">
-                                                            {note.category || note.subject}
-                                                        </span>
-                                                    </td>
-                                                    <td>
-                                                        {note.isFree || note.price === 0 ? (
-                                                            <span className="price-free">Free</span>
-                                                        ) : (
-                                                            `₹${note.price}`
-                                                        )}
-                                                    </td>
-                                                    <td>{formattedDate}</td>
-                                                    <td>
-                                                        <span className="note-file-type">{note.fileType || 'PDF'}</span>
-                                                    </td>
-                                                    <td className="upload-sales">{note.downloads ?? 0}</td>
-                                                    <td>
-                                                        <span className="badge badge-success">✓ Live</span>
-                                                    </td>
-                                                    <td>
-                                                        <div className="upload-row-actions">
-                                                            {note.fileUrl ? (
-                                                                <button
-                                                                    type="button"
-                                                                    className="btn btn-primary btn-sm"
-                                                                    onClick={() =>
-                                                                        window.open(
-                                                                            note.fileUrl,
-                                                                            '_blank',
-                                                                            'noopener,noreferrer'
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    📄 Open PDF
-                                                                </button>
-                                                            ) : (
-                                                                <span style={{ color: 'var(--text-muted)' }}>No File</span>
-                                                            )}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
+                                             return (
+                                                 <tr key={note.id || note._id}>
+                                                     <td className="upload-row-title">{note.title}</td>
+                                                     <td>
+                                                         <span className="badge badge-primary">
+                                                             {note.category || note.subject}
+                                                         </span>
+                                                     </td>
+                                                     <td>
+                                                         {note.isFree || note.price === 0 ? (
+                                                             <span className="price-free">Free</span>
+                                                         ) : (
+                                                             `₹${note.price}`
+                                                         )}
+                                                     </td>
+                                                     <td>{formattedDate}</td>
+                                                     <td>
+                                                         <span className="note-file-type">{note.fileType || 'PDF'}</span>
+                                                     </td>
+                                                     <td className="upload-sales">{note.downloads ?? 0}</td>
+                                                     <td>
+                                                         <span className="badge badge-success">✓ Live</span>
+                                                     </td>
+                                                     <td>
+                                                         <div className="upload-row-actions">
+                                                             {note.fileUrl ? (
+                                                                 <button
+                                                                     type="button"
+                                                                     className="btn btn-primary btn-sm"
+                                                                     onClick={() =>
+                                                                         window.open(
+                                                                             note.fileUrl,
+                                                                             '_blank',
+                                                                             'noopener,noreferrer'
+                                                                         )
+                                                                     }
+                                                                 >
+                                                                     📄 Open PDF
+                                                                 </button>
+                                                             ) : (
+                                                                 <span style={{ color: 'var(--text-muted)' }}>No File</span>
+                                                             )}
+                                                         </div>
+                                                     </td>
+                                                 </tr>
+                                             );
+                                         })}
                                     </tbody>
                                 </table>
                             </div>
@@ -360,32 +361,42 @@ const DashboardPage = () => {
                             <h2 className="heading-md">My Purchases</h2>
                             <p className="tab-section-sub">Notes you've bought and downloaded</p>
                         </div>
-                        <div className="purchases-grid">
-                            {myPurchases.map((p) => (
-                                <div key={p.id} className="purchase-card card">
-                                    <div className="purchase-icon">📖</div>
-                                    <div className="purchase-info">
-                                        <div className="badge badge-primary purchase-subject">{p.subject}</div>
-                                        <h3 className="purchase-title">{p.title}</h3>
-                                        <div className="purchase-meta">
-                                            <span>by {p.author}</span>
-                                            <span>·</span>
-                                            <span>
-                                                {new Date(p.purchaseDate).toLocaleDateString('en-IN', {
-                                                    day: 'numeric',
-                                                    month: 'short',
-                                                    year: 'numeric',
-                                                })}
-                                            </span>
+                        {myPurchases.length > 0 ? (
+                            <div className="purchases-grid">
+                                {myPurchases.map((p) => (
+                                    <div key={p.id} className="purchase-card card">
+                                        <div className="purchase-icon">📖</div>
+                                        <div className="purchase-info">
+                                            <div className="badge badge-primary purchase-subject">{p.subject}</div>
+                                            <h3 className="purchase-title">{p.title}</h3>
+                                            <div className="purchase-meta">
+                                                <span>by {p.author}</span>
+                                                <span>·</span>
+                                                <span>
+                                                    {new Date(p.purchaseDate).toLocaleDateString('en-IN', {
+                                                        day: 'numeric',
+                                                        month: 'short',
+                                                        year: 'numeric',
+                                                    })}
+                                                </span>
+                                            </div>
+                                            <div className="purchase-price">₹{p.price}</div>
                                         </div>
-                                        <div className="purchase-price">₹{p.price}</div>
+                                        <div className="purchase-actions">
+                                            <Link to="/browse" className="btn btn-primary btn-sm">Browse More</Link>
+                                        </div>
                                     </div>
-                                    <div className="purchase-actions">
-                                        <Link to="/browse" className="btn btn-primary btn-sm">Browse More</Link>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <EmptyState
+                                icon="🛒"
+                                title="No purchases yet"
+                                message="You haven't bought or downloaded any notes yet. Browse the marketplace to find study notes."
+                                actionLabel="Browse Notes"
+                                onAction={() => window.location.href = '/browse'}
+                            />
+                        )}
                     </div>
                 )}
 

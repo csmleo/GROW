@@ -1,3 +1,5 @@
+import { downloadPdf } from '../utils/notesUtils';
+
 /** Modal popup for note preview */
 const NotePreviewModal = ({ note, onClose }) => {
     if (!note) return null;
@@ -5,8 +7,11 @@ const NotePreviewModal = ({ note, onClose }) => {
     const tags = Array.isArray(note.tags) ? note.tags : [];
     const downloads = note.downloads ?? 0;
     const canOpenFile = Boolean(note.fileUrl);
+    const hasDistinctCategory =
+        note.category &&
+        note.category.trim().toLowerCase() !== (note.subject || '').trim().toLowerCase();
 
-    const handlePrimaryAction = () => {
+    const handleOpen = () => {
         if (canOpenFile) {
             window.open(note.fileUrl, '_blank', 'noopener,noreferrer');
             return;
@@ -14,15 +19,32 @@ const NotePreviewModal = ({ note, onClose }) => {
         onClose();
     };
 
+    const handleDownload = (e) => {
+        e.stopPropagation();
+        if (note.fileUrl) {
+            downloadPdf(note.fileUrl, note.originalFilename || `${note.title || 'note'}.pdf`);
+        }
+    };
+
     return (
         <div className="modal-overlay" onClick={onClose} role="presentation">
             <div className="modal-card glass-card" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
                 <button type="button" className="modal-close" onClick={onClose} aria-label="Close preview">✕</button>
 
-                <div className="modal-header">
-                    <span className="badge badge-primary">{note.subject}</span>
-                    {note.category && <span className="badge badge-secondary">{note.category}</span>}
-                    {note.isFree && <span className="badge badge-free">FREE</span>}
+                <div className="modal-header" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span className="badge badge-primary">{note.subject || 'General'}</span>
+                    {hasDistinctCategory && (
+                        <>
+                            <span style={{ color: 'var(--text-muted)' }}>·</span>
+                            <span className="badge badge-secondary">{note.category}</span>
+                        </>
+                    )}
+                    <span style={{ color: 'var(--text-muted)' }}>·</span>
+                    {note.isFree || note.price === 0 ? (
+                        <span className="badge badge-free">FREE</span>
+                    ) : (
+                        <span className="badge badge-gold">₹{note.price}</span>
+                    )}
                 </div>
 
                 <h2 className="modal-title">{note.title}</h2>
@@ -35,30 +57,29 @@ const NotePreviewModal = ({ note, onClose }) => {
                     <span>⭐ {note.rating ?? 0} ({note.reviews ?? 0} reviews)</span>
                 </div>
 
-                <div className="modal-tags">
-                    {tags.map((tag) => (
-                        <span key={tag} className="note-tag">#{tag}</span>
-                    ))}
-                </div>
+                {tags.length > 0 && (
+                    <div className="modal-tags">
+                        {tags.map((tag) => (
+                            <span key={tag} className="note-tag">#{tag}</span>
+                        ))}
+                    </div>
+                )}
 
                 <div className="modal-footer">
-                    <span className="modal-price">{note.isFree ? 'Free' : `₹${note.price}`}</span>
+                    <span className="modal-price">{note.isFree || note.price === 0 ? 'Free' : `₹${note.price}`}</span>
                     {canOpenFile ? (
                         <div style={{ display: 'flex', gap: '8px' }}>
-                            <button type="button" className="btn btn-primary" onClick={handlePrimaryAction}>
+                            <button type="button" className="btn btn-primary" onClick={handleOpen}>
                                 📄 Open PDF ↗
                             </button>
-                            <a
-                                href={note.fileUrl}
-                                download={note.originalFilename || `${note.title || 'note'}.pdf`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                            <button
+                                type="button"
                                 className="btn btn-ghost"
                                 style={{ display: 'inline-flex', alignItems: 'center' }}
-                                onClick={(e) => e.stopPropagation()}
+                                onClick={handleDownload}
                             >
                                 ⬇ Download
-                            </a>
+                            </button>
                         </div>
                     ) : (
                         <button type="button" className="btn btn-primary" onClick={onClose}>

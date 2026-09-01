@@ -1,5 +1,6 @@
 const streamifier = require("streamifier");
 const Note = require("../models/Note");
+const User = require("../models/User");
 const { cloudinary } = require("../config/cloudinary");
 
 const uploadBufferToCloudinary = (buffer, originalFilename) =>
@@ -14,7 +15,8 @@ const uploadBufferToCloudinary = (buffer, originalFilename) =>
                 resource_type: "raw",
                 folder: "grow-notes",
                 public_id: `${Date.now()}-${safeName}.pdf`,
-                format: "pdf",
+                type: "upload",
+                access_mode: "public",
             },
             (error, result) => {
                 if (error) {
