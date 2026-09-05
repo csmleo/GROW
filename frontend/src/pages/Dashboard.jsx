@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getMyNotes } from '../services/noteService';
 import EmptyState from '../components/EmptyState';
-import DeleteAccountModal from '../components/DeleteAccountModal';
 import './Dashboard.css';
 
 const TAB_OVERVIEW = 'overview';
@@ -36,7 +35,7 @@ const DashboardPage = () => {
     const [myNotes, setMyNotes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
+
 
     useEffect(() => {
         let cancelled = false;
@@ -509,48 +508,9 @@ const DashboardPage = () => {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Danger Zone */}
-                        <div
-                            className="card"
-                            style={{
-                                padding: '24px',
-                                border: '1px solid rgba(255, 107, 107, 0.3)',
-                                background: 'rgba(255, 107, 107, 0.04)',
-                            }}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                                <span style={{ fontSize: '1.3rem' }}>⚠️</span>
-                                <h3 style={{ fontFamily: 'var(--font-display)', color: 'var(--accent)', margin: 0, fontSize: '1.1rem' }}>
-                                    Danger Zone
-                                </h3>
-                            </div>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '16px' }}>
-                                This permanently deletes your account and your uploaded notes. This action cannot be undone.
-                            </p>
-                            <div>
-                                <button
-                                    type="button"
-                                    className="btn"
-                                    style={{
-                                        background: 'var(--accent)',
-                                        color: '#fff',
-                                        boxShadow: '0 4px 16px rgba(255, 107, 107, 0.25)',
-                                    }}
-                                    onClick={() => setShowDeleteModal(true)}
-                                >
-                                    Delete Account
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 )}
             </div>
-
-            <DeleteAccountModal
-                isOpen={showDeleteModal}
-                onClose={() => setShowDeleteModal(false)}
-            />
         </div>
     );
 };

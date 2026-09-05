@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
+import EditProfileModal from '../components/EditProfileModal';
 import DeleteAccountModal from '../components/DeleteAccountModal';
 
 const ProfilePage = () => {
     const { user } = useAuth();
+    const [showEditModal, setShowEditModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     return (
@@ -11,7 +13,16 @@ const ProfilePage = () => {
             <section className="section">
                 <div className="container" style={{ maxWidth: '800px' }}>
                     <div className="glass-card" style={{ padding: '32px', marginTop: '32px' }}>
-                        <h1 style={{ marginBottom: '8px' }}>Profile Settings</h1>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '12px' }}>
+                            <h1 style={{ margin: 0 }}>Profile Settings</h1>
+                            <button
+                                type="button"
+                                className="btn btn-primary btn-sm"
+                                onClick={() => setShowEditModal(true)}
+                            >
+                                ✏️ Edit Profile
+                            </button>
+                        </div>
                         <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
                             Your account details and preferences.
                         </p>
@@ -82,6 +93,12 @@ const ProfilePage = () => {
                 </div>
             </section>
 
+            <EditProfileModal
+                isOpen={showEditModal}
+                onClose={() => setShowEditModal(false)}
+                currentUser={user}
+            />
+
             <DeleteAccountModal
                 isOpen={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}
@@ -91,3 +108,4 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
+

@@ -39,6 +39,14 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
+    const updateUser = useCallback((newUser) => {
+        if (newUser) {
+            const normalized = normalizeUser(newUser);
+            localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(normalized));
+            setUser(normalized);
+        }
+    }, []);
+
     const login = useCallback((payload) => {
         persistAuth(payload?.token, payload?.user);
     }, [persistAuth]);
@@ -85,7 +93,9 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated: !!token,
         login,
         logout,
+        updateUser,
     };
+
 
     return (
         <AuthContext.Provider value={value}>

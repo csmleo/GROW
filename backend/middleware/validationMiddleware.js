@@ -29,6 +29,20 @@ exports.loginValidationRules = [
         .withMessage("Password is required."),
 ];
 
+exports.updateProfileValidationRules = [
+    body("name")
+        .trim()
+        .notEmpty()
+        .withMessage("Name is required.")
+        .isLength({ min: 2 })
+        .withMessage("Name must be at least 2 characters."),
+    body("email")
+        .trim()
+        .isEmail()
+        .withMessage("Please provide a valid email address."),
+];
+
+
 // Middleware to run after rules
 exports.validateRequest = (req, res, next) => {
     const errors = validationResult(req);
