@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { getMyNotes } from '../services/noteService';
 import EmptyState from '../components/EmptyState';
+import DeleteAccountModal from '../components/DeleteAccountModal';
 import './Dashboard.css';
 
 const TAB_OVERVIEW = 'overview';
 const TAB_PURCHASES = 'purchases';
 const TAB_UPLOADS = 'uploads';
 const TAB_EARNINGS = 'earnings';
+const TAB_SETTINGS = 'settings';
 
 const myPurchases = [];
 
@@ -17,6 +19,7 @@ const tabs = [
     { id: TAB_PURCHASES, label: '🛒 Purchases' },
     { id: TAB_UPLOADS, label: '📤 My Uploads' },
     { id: TAB_EARNINGS, label: '💰 Earnings' },
+    { id: TAB_SETTINGS, label: '⚙️ Account Settings' },
 ];
 
 const initialsFromName = (name = '') =>
@@ -33,6 +36,7 @@ const DashboardPage = () => {
     const [myNotes, setMyNotes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -451,20 +455,102 @@ const DashboardPage = () => {
                                                 </div>
                                                 <div className="breakdown-bar-wrap">
                                                     <div
-                                                        className="breakdown-bar"
-                                                        style={{ width: `${totalEarnings > 0 ? (noteEarn / totalEarnings) * 100 : 0}%` }}
-                                                    />
-                                                </div>
-                                                <div className="breakdown-amount">₹{Math.round(noteEarn).toLocaleString()}</div>
-                                            </div>
-                                        );
-                                    })}
+                                                         className="breakdown-bar"
+                                                         style={{ width: `${totalEarnings > 0 ? (noteEarn / totalEarnings) * 100 : 0}%` }}
+                                                     />
+                                                 </div>
+                                                 <div className="breakdown-amount">₹{Math.round(noteEarn).toLocaleString()}</div>
+                                             </div>
+                                         );
+                                     })}
+                                 </div>
+                             </div>
+                         )}
+                     </div>
+                 )}
+
+                {/* ── ACCOUNT SETTINGS TAB ── */}
+                {activeTab === TAB_SETTINGS && (
+                    <div className="tab-content animate-fade">
+                        <div className="tab-section-header">
+                            <h2 className="heading-md">Account Settings</h2>
+                            <p className="tab-section-sub">Manage your profile details and account security</p>
+                        </div>
+
+                        {/* Account Information */}
+                        <div className="card" style={{ padding: '24px' }}>
+                            <h3 style={{ fontFamily: 'var(--font-display)', marginBottom: '16px', fontSize: '1.1rem' }}>
+                                Account Information
+                            </h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+                                <div>
+                                    <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.05em' }}>
+                                        Full Name
+                                    </div>
+                                    <div style={{ marginTop: '4px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                        {user?.name || 'Student'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.05em' }}>
+                                        Email Address
+                                    </div>
+                                    <div style={{ marginTop: '4px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                                        {user?.email || '—'}
+                                    </div>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.05em' }}>
+                                        Account Role
+                                    </div>
+                                    <div style={{ marginTop: '4px', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'capitalize' }}>
+                                        {user?.role || 'student'}
+                                    </div>
                                 </div>
                             </div>
-                        )}
+                        </div>
+
+                        {/* Danger Zone */}
+                        <div
+                            className="card"
+                            style={{
+                                padding: '24px',
+                                border: '1px solid rgba(255, 107, 107, 0.3)',
+                                background: 'rgba(255, 107, 107, 0.04)',
+                            }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '1.3rem' }}>⚠️</span>
+                                <h3 style={{ fontFamily: 'var(--font-display)', color: 'var(--accent)', margin: 0, fontSize: '1.1rem' }}>
+                                    Danger Zone
+                                </h3>
+                            </div>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '16px' }}>
+                                This permanently deletes your account and your uploaded notes. This action cannot be undone.
+                            </p>
+                            <div>
+                                <button
+                                    type="button"
+                                    className="btn"
+                                    style={{
+                                        background: 'var(--accent)',
+                                        color: '#fff',
+                                        boxShadow: '0 4px 16px rgba(255, 107, 107, 0.25)',
+                                    }}
+                                    onClick={() => setShowDeleteModal(true)}
+                                >
+                                    Delete Account
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
+
+            <DeleteAccountModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+            />
         </div>
     );
 };

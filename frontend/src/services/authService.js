@@ -8,3 +8,7 @@ export const loginUser = (data) => api.post('/auth/login', data);
 
 // Get current logged-in user profile (protected)
 export const getProfile = () => api.get('/auth/me');
+
+// Delete current logged-in user account (protected)
+export const deleteAccount = () => api.delete('/auth/account');
+
